@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .section {
+            flex: 1;
+            margin: 0 10px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .category-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .category-list li {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .category-list li:hover {
+            background-color: #218838;
+        }
+
+        .items-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .item-card {
+            margin: 10px;
+            padding: 10px;
+            width: 150px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .item-card img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .bill-items {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .bill-items li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .total {
+            font-weight: bold;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Section 1: Categories -->
+        <div class="section" id="section-categories">
+            <h2>Categories</h2>
+            <ul class="category-list" id="categoryList"></ul>
+        </div>
+
+        <!-- Section 2: Items -->
+        <div class="section" id="section-items">
+            <h2>Items</h2>
+            <div class="items-container" id="itemsContainer"></div>
+        </div>
+
+        <!-- Section 3: Bill -->
+        <div class="section" id="section-bill">
+            <h2>Bill</h2>
+            <ul class="bill-items" id="billItems"></ul>
+            <div class="total" id="totalPrice">Total: ₹0.00</div>
+
+            <!-- Add this after the total price div inside Section 3 -->
+<button id="checkoutButton" style="margin-top: 20px; width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Checkout</button>
+
+        </div>
+    </div>
+
+    <script>
+        // Fetch categories and items when the page loads
+        window.onload = function() {
+            fetchCategories();
+            fetchItems();
+        };
+
+        // Function to fetch and display categories
+        function fetchCategories() {
+            fetch('fetch_categories.php')
+                .then(response => response.json())
+                .then(data => {
+                    let categoryList = document.getElementById('categoryList');
+                    categoryList.innerHTML = '';
+                    data.forEach(category => {
+                        let li = document.createElement('li');
+                        li.textContent = category;
+                        li.onclick = () => fetchItems(category);
+                        categoryList.appendChild(li);
+                    });
+                });
+        }
+
+        // Function to fetch and display items based on the selected category
+        function fetchItems(category = null) {
+            let url = category ? `fetch_items.php?category=${category}` : 'fetch_items.php';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let itemsContainer = document.getElementById('itemsContainer');
+                    itemsContainer.innerHTML = '';
+                    data.forEach(item => {
+                        let card = document.createElement('div');
+                        card.classList.add('item-card');
+                        card.innerHTML = `
+                            <img src="${item.image_path}" alt="${item.name}">
+                            <h4>${item.name}</h4>
+                            <p>$${item.price}</p>
+                        `;
+                        card.onclick = () => addToBill(item);
+                        itemsContainer.appendChild(card);
+                    });
+                });
+        }
+
+        // Function to add an item to the bill
+        function addToBill(item) {
+            let billItems = document.getElementById('billItems');
+            let li = document.createElement('li');
+            li.textContent = `${item.name} - $${item.price}`;
+            billItems.appendChild(li);
+
+            // Update total price
+            let totalPriceElement = document.getElementById('totalPrice');
+            let currentTotal = parseFloat(totalPriceElement.textContent.split('$')[1]);
+            currentTotal += parseFloat(item.price);
+            totalPriceElement.textContent = `Total: $${currentTotal.toFixed(2)}`;
+        }
+
+
+        // Checkout button functionality
+document.getElementById('checkoutButton').onclick = function () {
+    let billItems = document.getElementById('billItems').innerHTML;
+    let totalPrice = document.getElementById('totalPrice').textContent;
+
+    if (billItems === "") {
+        alert("Aapka bill  khali! 🌯🍱🍜🍲");
+        return;
+    }
+
+    let receiptWindow = window.open('', '', 'width=400,height=600');
+    receiptWindow.document.write('<html><head><title>Receipt</title></head><body>');
+    receiptWindow.document.write('<h2>Receipt</h2>');
+    receiptWindow.document.write('<ul style="list-style-type: none; padding: 0;">');
+    receiptWindow.document.write(billItems);
+    receiptWindow.document.write('</ul>');
+    receiptWindow.document.write('<div style="font-weight: bold; margin-top: 20px;">' + totalPrice + '</div>');
+    receiptWindow.document.write('</body></html>');
+    receiptWindow.document.close();
+    receiptWindow.print();
+};
+
+    </script>
+</body>
+</html>
